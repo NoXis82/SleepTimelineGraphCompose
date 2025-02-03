@@ -14,12 +14,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.Instant
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DateTimeComponents
+import kotlinx.datetime.format.DateTimeFormat
 import ru.noxis.sleeptimelinegraphcompose.model.SleepSessionRecord
 import ru.noxis.sleeptimelinegraphcompose.model.SleepSessionStageType
 import kotlin.time.Duration.Companion.minutes
@@ -33,6 +37,13 @@ fun SleepSessionCanvas(
     textSpacing: Dp = 4.dp,
     typeTextStyle: TextStyle = LocalTextStyle.current,
     timeTextStyle: TextStyle = LocalTextStyle.current,
+    timeFormatter: DateTimeFormat<DateTimeComponents> = remember {
+        DateTimeComponents.Format {
+            hour()
+            chars(":")
+            minute()
+        }
+    },
 ) {
     val colors = remember {
         mapOf(
@@ -88,6 +99,14 @@ fun SleepSessionCanvas(
                     )
                 }
 
+                val hours = calculateHours(
+                    textMeasurer = textMeasurer,
+                    textStyle = timeTextStyle,
+                    formatter = timeFormatter,
+                    canvasSize = size,
+                    recordStartTime = record.startTime,
+                    recordEndTime = record.endTime,
+                )
 //                val points = calculate(
 //                    canvasSize = size,
 //                    recordStartTime = record.startTime,
@@ -123,6 +142,16 @@ fun SleepSessionCanvas(
                         }
                         offset += stageHeightPx + stagesSpacingPx
                     }
+                    // Draw session hours
+                    offset += textSpacingPx - stagesSpacingPx
+                    hours.forEach { (topLeft, textLayoutResult) ->
+                        translate(top = offset) {
+                            drawText(
+                                textLayoutResult = textLayoutResult,
+                                topLeft = topLeft,
+                            )
+                        }
+                    }
                 }
             }
     )
@@ -155,6 +184,44 @@ private fun calculatePoints(
         )
     }
 }
+
+private fun calculateHours(
+    textMeasurer: TextMeasurer,
+    textStyle: TextStyle,
+    formatter: DateTimeFormat<DateTimeComponents>,
+    canvasSize: Size,
+    recordStartTime: Instant,
+    recordEndTime: Instant,
+): List<Pair<Offset, TextLayoutResult>> {
+    val startHour = textMeasurer.measure(
+        text = recordStartTime.format(formatter),
+        style = textStyle,
+        maxLines = 1,
+    )
+    val startHourOffset = Offset.Zero
+
+    val middleDate = recordStartTime + (recordEndTime - recordStartTime) / 2
+    val middleHour = textMeasurer.measure(
+        text = middleDate.format(formatter),
+        style = textStyle,
+        maxLines = 1,
+    )
+    val middleHourOffset = Offset(x = (canvasSize.width - middleHour.size.width) / 2, y = 0f)
+
+    val endHour = textMeasurer.measure(
+        text = recordEndTime.format(formatter),
+        style = textStyle,
+        maxLines = 1,
+    )
+    val endHourOffset = Offset(x = canvasSize.width - endHour.size.width, y = 0f)
+
+    return listOf(
+        startHourOffset to startHour,
+        middleHourOffset to middleHour,
+        endHourOffset to endHour,
+    )
+}
+
 
 private data class DrawPoint(
     val topLeft: Offset,

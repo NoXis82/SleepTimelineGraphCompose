@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             SleepTimelineGraphComposeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
+                    App()
                 }
             }
         }

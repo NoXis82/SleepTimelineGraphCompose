@@ -22,8 +22,14 @@ import ru.noxis.sleeptimelinegraphcompose.components.SleepSessionCanvas
 import ru.noxis.sleeptimelinegraphcompose.model.SleepSessionRecord
 import ru.noxis.sleeptimelinegraphcompose.model.SleepSessionStageType
 import ru.noxis.sleeptimelinegraphcompose.ui.theme.SleepTimelineGraphComposeTheme
+import java.util.Timer
+import java.util.TimerTask
 
 class MainActivity : ComponentActivity() {
+
+    private var timer: Timer? = null
+    private var count: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -34,6 +40,32 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        initTimer()
+    }
+
+    private fun initTimer() {
+        count = 0
+        if (timer == null) {
+            timer = Timer()
+            timer!!.schedule(object : TimerTask() {
+                override fun run() {
+                   println(">>> Count: ${count++} ")
+                }
+            }, 2000, 60*1000)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (timer != null) {
+            timer?.cancel()
+            timer = null
+        }
+        timer?.purge()
     }
 }
 
